@@ -1,14 +1,15 @@
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
 
-import LoginScreen            from '../screens/LoginScreen';
-import DashboardScreen        from '../screens/DashboardScreen';
-import CadastroAlunoScreen    from '../screens/CadastroAlunoScreen';
+import LoginScreen             from '../screens/LoginScreen';
+import DashboardScreen         from '../screens/DashboardScreen';
+import CadastroAlunoScreen     from '../screens/CadastroAlunoScreen';
 import CadastroProfessorScreen from '../screens/CadastroProfessorScreen';
 import CadastroDisciplinaScreen from '../screens/CadastroDisciplinaScreen';
-import BoletimScreen          from '../screens/BoletimScreen';
+import BoletimScreen           from '../screens/BoletimScreen';
 
 import { colors } from '../styles/theme';
 
@@ -41,7 +42,17 @@ function AppStack() {
 }
 
 export default function AppNavigator() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Aguarda restauração de sessão do AsyncStorage antes de renderizar
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       {user ? <AppStack /> : <AuthStack />}
