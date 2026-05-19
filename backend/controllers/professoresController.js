@@ -13,6 +13,15 @@ async function listar(req, res) {
 // GET /api/professores/:id
 async function buscarPorId(req, res) {
   try {
+    if (req.params.id === 'meu-perfil') {
+      const result = await pool.query(
+        'SELECT * FROM professores WHERE email = (SELECT email FROM usuarios WHERE id = $1)',
+        [req.user.id]
+      );
+      if (result.rows.length === 0) return res.status(404).json({ erro: 'Professor não encontrado.' });
+      return res.json(result.rows[0]);
+    }
+
     const result = await pool.query('SELECT * FROM professores WHERE id=$1', [req.params.id]);
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Professor não encontrado.' });
     res.json(result.rows[0]);
@@ -21,7 +30,47 @@ async function buscarPorId(req, res) {
   }
 }
 
-// POST /api/professores
+// PUT /api/professores/:id
+async function atualizar(req, res) {
+  let idDoParametro = req.params.id;
+  const idUsuarioLogado = req.user.id; 
+  const { nome, titulacao, area, tempo_docencia, email } = req.body;
+
+  try {
+    const profLogadoQuery = await pool.query(
+      'SELECT id FROM professores WHERE email = (SELECT email FROM usuarios WHERE id = $1)',
+      [idUsuarioLogado]
+    );
+    const idProfLogado = profLogadoQuery.rows[0]?.id;
+
+    if (idDoParametro === 'meu-perfil') {
+      idDoParametro = idProfLogado;
+    }
+
+    if (req.user.role !== 'adm' && String(idProfLogado) !== String(idDoParametro)) {
+      return res.status(403).json({ erro: 'Acesso negado. Você só pode alterar seus próprios dados.' });
+    }
+
+    let result;
+    if (req.user.role === 'adm') {
+      result = await pool.query(
+        `UPDATE professores SET nome=$1, titulacao=$2, area=$3, tempo_docencia=$4, email=$5 WHERE id=$6 RETURNING *`,
+        [nome, titulacao, area, tempo_docencia, email, idDoParametro]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE professores SET nome=$1, titulacao=$2, area=$3, tempo_docencia=$4 WHERE id=$5 RETURNING *`,
+        [nome, titulacao, area, tempo_docencia, idProfLogado]
+      );
+    }
+
+    if (result.rows.length === 0) return res.status(404).json({ erro: 'Professor não encontrado.' });
+    res.json({ mensagem: 'Professor atualizado com sucesso!', professor: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ erro: 'Erro ao atualizar professor.' });
+  }
+}
+// POST /api/professores (Apenas Admin)
 async function criar(req, res) {
   const { nome, titulacao, area, tempo_docencia, email } = req.body;
 
@@ -43,23 +92,52 @@ async function criar(req, res) {
   }
 }
 
-// PUT /api/professores/:id
+// PUT /api/professores/:id (Com trava de e-mail)
 async function atualizar(req, res) {
+  const idDoParametro = req.params.id;
+  const idUsuarioLogado = req.user.id; 
   const { nome, titulacao, area, tempo_docencia, email } = req.body;
+
   try {
-    const result = await pool.query(
-      `UPDATE professores SET nome=$1, titulacao=$2, area=$3, tempo_docencia=$4, email=$5
-       WHERE id=$6 RETURNING *`,
-      [nome, titulacao, area, tempo_docencia, email, req.params.id]
+    // Descobre o ID do professor associado ao e-mail do usuário logado
+    const profLogadoQuery = await pool.query(
+      'SELECT id FROM professores WHERE email = (SELECT email FROM usuarios WHERE id = $1)',
+      [idUsuarioLogado]
     );
+    const idProfLogado = profLogadoQuery.rows[0]?.id;
+
+    // TRAVA DE SEGURANÇA: Bloqueia se um professor tentar editar outro professor
+    if (req.user.role !== 'adm' && String(idProfLogado) !== String(idDoParametro)) {
+      return res.status(403).json({ erro: 'Acesso negado. Você só pode alterar seus próprios dados.' });
+    }
+
+    let result;
+
+    if (req.user.role === 'adm') {
+      // ADMIN: Altera TUDO, inclusive o e-mail
+      result = await pool.query(
+        `UPDATE professores SET nome=$1, titulacao=$2, area=$3, tempo_docencia=$4, email=$5
+         WHERE id=$6 RETURNING *`,
+        [nome, titulacao, area, tempo_docencia, email, idDoParametro]
+      );
+    } else {
+      // PROFESSOR: Altera os dados profissionais, MAS NÃO O E-MAIL
+      result = await pool.query(
+        `UPDATE professores SET nome=$1, titulacao=$2, area=$3, tempo_docencia=$4
+         WHERE id=$5 RETURNING *`,
+        [nome, titulacao, area, tempo_docencia, idProfLogado]
+      );
+    }
+
     if (result.rows.length === 0) return res.status(404).json({ erro: 'Professor não encontrado.' });
-    res.json({ mensagem: 'Professor atualizado!', professor: result.rows[0] });
+    res.json({ mensagem: 'Professor atualizado com sucesso!', professor: result.rows[0] });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ erro: 'Erro ao atualizar professor.' });
   }
 }
 
-// DELETE /api/professores/:id
+// DELETE /api/professores/:id (Apenas Admin)
 async function remover(req, res) {
   try {
     const result = await pool.query('DELETE FROM professores WHERE id=$1 RETURNING id', [req.params.id]);

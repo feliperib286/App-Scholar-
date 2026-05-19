@@ -1,8 +1,9 @@
+// Exemplo de como deve ficar a rota de auth
 const express = require('express');
-const router  = express.Router();
-const { login } = require('../controllers/authController');
+const router = express.Router();
+const authController = require('../controllers/authController');
 
-// POST /api/login
-router.post('/login', login);
+router.post('/login', authController.login);
+router.post('/primeiro-acesso', authController.trocarSenhaPrimeiroAcesso);
 
 module.exports = router;

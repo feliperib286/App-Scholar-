@@ -111,4 +111,15 @@ export async function buscarCidades(uf) {
   return response.data; // [{ id, nome }, ...]
 }
 
+export const apiGetMeuBoletim = async () => {
+  // Supondo que suas rotas de alunos estejam sob /alunos ou /api/alunos
+  const response = await api.get('/alunos/meu-boletim'); 
+  return response.data;
+};
+
+export const apiGetMinhaGrade = async () => {
+  const response = await api.get('/alunos/minha-grade');
+  return response.data;
+};
+
 export default api;

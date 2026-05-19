@@ -1,7 +1,9 @@
 const pool = require('../database/db');
 
+// ==========================================
 // GET /api/boletim/:matricula
 // Retorna o boletim completo de um aluno pela matrícula
+// ==========================================
 async function getBoletim(req, res) {
   const { matricula } = req.params;
 
@@ -50,7 +52,9 @@ async function getBoletim(req, res) {
   }
 }
 
-// GET /api/notas  – lista todas as notas
+// ==========================================
+// GET /api/notas - lista todas as notas (Para a secretaria/Admin)
+// ==========================================
 async function listar(req, res) {
   try {
     const result = await pool.query(
@@ -66,22 +70,39 @@ async function listar(req, res) {
   }
 }
 
-// POST /api/notas  – lança ou atualiza nota
+// ==========================================
+// POST /api/notas - Professor lança ou atualiza nota
+// ==========================================
 async function lancarNota(req, res) {
+  // O id do professor vem do Token JWT (garantido pelo middleware de autenticação)
+  const idProfessor = req.user.id; 
   const { aluno_id, disciplina_id, nota1, nota2 } = req.body;
 
   if (!aluno_id || !disciplina_id) {
     return res.status(400).json({ erro: 'aluno_id e disciplina_id são obrigatórios.' });
   }
 
-  // Calcula média e situação automaticamente
-  const n1 = parseFloat(nota1) || 0;
-  const n2 = parseFloat(nota2) || 0;
-  const media = parseFloat(((n1 + n2) / 2).toFixed(2));
-  const situacao = media >= 6 ? 'Aprovado' : media >= 4 ? 'Rec. Final' : 'Reprovado';
-
   try {
-    // UPSERT: cria ou atualiza se já existir
+    // 1. TRAVA DE SEGURANÇA: Verifica se o professor leciona essa disciplina
+    // Adapte o nome da tabela "professor_disciplina" e colunas conforme o seu schema SQL
+    const verificaDisciplina = await pool.query(
+      'SELECT * FROM professor_disciplina WHERE professor_id = $1 AND disciplina_id = $2',
+      [idProfessor, disciplina_id]
+    );
+
+    // Se o professor for admin, você pode criar uma exceção aqui futuramente, 
+    // mas pela regra geral, se não leciona a matéria, é bloqueado.
+    if (verificaDisciplina.rows.length === 0 && req.user.role !== 'adm') {
+      return res.status(403).json({ erro: 'Você não tem permissão para lançar notas nesta disciplina.' });
+    }
+
+    // 2. Calcula média e situação automaticamente
+    const n1 = parseFloat(nota1) || 0;
+    const n2 = parseFloat(nota2) || 0;
+    const media = parseFloat(((n1 + n2) / 2).toFixed(2));
+    const situacao = media >= 6 ? 'Aprovado' : media >= 4 ? 'Rec. Final' : 'Reprovado';
+
+    // 3. UPSERT: cria ou atualiza a nota se já existir no PostgreSQL
     const result = await pool.query(
       `INSERT INTO notas (aluno_id, disciplina_id, nota1, nota2, media, situacao)
        VALUES ($1,$2,$3,$4,$5,$6)
@@ -90,13 +111,15 @@ async function lancarNota(req, res) {
        RETURNING *`,
       [aluno_id, disciplina_id, n1, n2, media, situacao]
     );
+
     res.status(201).json({
-      mensagem: 'Nota lançada com sucesso!',
+      mensagem: 'Nota lançada/atualizada com sucesso!',
       nota: result.rows[0],
     });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ erro: 'Erro ao lançar nota.' });
+    res.status(500).json({ erro: 'Erro ao lançar nota no banco de dados.' });
   }
 }
 
