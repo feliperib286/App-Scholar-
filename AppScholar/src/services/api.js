@@ -1,12 +1,12 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 // ─────────────────────────────────────────────────────────────
-// ATENÇÃO: troque pelo IP da sua máquina na rede local.
-// No Android Emulator use: http://10.0.2.2:3000
-// No dispositivo físico use o IP da sua máquina, ex: http://192.168.1.100:3000
+// LÓGICA INTELIGENTE DE CONEXÃO:
+// Se for Web, usa localhost. Se for App, usa o IP da máquina.
 // ─────────────────────────────────────────────────────────────
-const BASE_URL = 'http://10.68.55.27:3000/api';
+const BASE_URL = Platform.OS === 'web' 
+  ? 'http://localhost:3000/api' 
+  : 'http://10.68.55.27:3000/api'; // Seu IP atual da rede Wi-Fi
 
 const api = axios.create({
   baseURL: BASE_URL,
