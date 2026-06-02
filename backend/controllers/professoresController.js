@@ -139,13 +139,43 @@ async function atualizar(req, res) {
 
 // DELETE /api/professores/:id (Apenas Admin)
 async function remover(req, res) {
+  const { id } = req.params;
   try {
-    const result = await pool.query('DELETE FROM professores WHERE id=$1 RETURNING id', [req.params.id]);
-    if (result.rows.length === 0) return res.status(404).json({ erro: 'Professor não encontrado.' });
-    res.json({ mensagem: 'Professor removido.' });
+    // Apaga o vínculo com as disciplinas primeiro
+    await pool.query('DELETE FROM professor_disciplina WHERE professor_id = $1', [id]);
+    // Depois apaga o professor
+    await pool.query('DELETE FROM professores WHERE id = $1', [id]);
+    
+    res.json({ mensagem: 'Professor excluído!' });
   } catch (err) {
-    res.status(500).json({ erro: 'Erro ao remover professor.' });
+    res.status(500).json({ erro: 'Erro ao excluir professor.' });
+  }
+}
+// POST /api/professores/:id/vincular
+async function vincularDisciplinas(req, res) {
+  const { id } = req.params;
+  const { disciplinas_ids } = req.body; // Recebe um array com os IDs das matérias marcadas
+
+  try {
+    // 1. Limpa as atribuições antigas desse professor para evitar duplicidade
+    await pool.query('DELETE FROM professor_disciplina WHERE professor_id = $1', [id]);
+
+    // 2. Insere as novas disciplinas selecionadas
+    if (disciplinas_ids && disciplinas_ids.length > 0) {
+      for (let discId of disciplinas_ids) {
+        await pool.query(
+          'INSERT INTO professor_disciplina (professor_id, disciplina_id) VALUES ($1, $2)',
+          [id, discId]
+        );
+      }
+    }
+    res.json({ mensagem: 'Atribuição de aulas atualizada com sucesso!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ erro: 'Erro ao processar a atribuição de disciplinas.' });
   }
 }
 
-module.exports = { listar, buscarPorId, criar, atualizar, remover };
+// Atualize a última linha do arquivo para exportar a função nova:
+module.exports = { listar, buscarPorId, criar, atualizar, remover, vincularDisciplinas };
+

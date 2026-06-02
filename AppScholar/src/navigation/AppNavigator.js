@@ -15,12 +15,14 @@ import DashboardScreen          from '../screens/DashboardScreen';
 import CadastroAlunoScreen      from '../screens/CadastroAlunoScreen';
 import CadastroProfessorScreen  from '../screens/CadastroProfessorScreen';
 import CadastroDisciplinaScreen from '../screens/CadastroDisciplinaScreen';
+import NovoProfessorScreen from '../screens/NovoProfessorScreen';
+import NovoAlunoScreen from '../screens/NovoAlunoScreen';
 
 // Importação de Telas Extras de Admin
 import FaltasAlunoScreen        from '../screens/FaltasAlunoScreen';
 import HorarioAlunoScreen       from '../screens/HorarioAlunoScreen';
-import EditarAlunoScreen        from '../screens/EditarAlunoScreen';
 import EditarProfessorScreen    from '../screens/EditarProfessorScreen';
+import EditarAlunoScreen from '../screens/EditarAlunoScreen';
 
 // Importação de Telas de Aluno e Genéricas
 import BoletimScreen            from '../screens/BoletimScreen';
@@ -61,12 +63,14 @@ function AppStack() {
       <Stack.Screen name="CadastroAluno"      component={CadastroAlunoScreen} />
       <Stack.Screen name="CadastroProfessor"  component={CadastroProfessorScreen} />
       <Stack.Screen name="CadastroDisciplina" component={CadastroDisciplinaScreen} />
+      <Stack.Screen name="NovoProfessor" component={NovoProfessorScreen} />
       
       {/* Telas de Ação (Acessadas pelos botões de Gerenciar) */}
       <Stack.Screen name="FaltasAluno"        component={FaltasAlunoScreen} />
       <Stack.Screen name="HorarioAluno"       component={HorarioAlunoScreen} />
       <Stack.Screen name="EditarAluno"        component={EditarAlunoScreen} />
       <Stack.Screen name="EditarProfessor"    component={EditarProfessorScreen} />
+      <Stack.Screen name="NovoAluno" component={NovoAlunoScreen} />
 
       {/* Telas do Aluno */}
       <Stack.Screen name="Boletim"            component={BoletimScreen} />

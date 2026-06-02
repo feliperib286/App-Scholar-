@@ -160,20 +160,39 @@ async function atualizar(req, res) {
 }
 
 // ==========================================
-// 5. DELETE /api/alunos/:id - Remover Aluno (Apenas Admin)
+// DELETE /api/alunos/:id - Excluir aluno
 // ==========================================
 async function remover(req, res) {
+  const { id } = req.params;
+
+  // COLOQUE ESTE RADAR AQUI:
+  console.log("🔥 CHEGOU NA FUNÇÃO DE DELETAR! O ID DO ALUNO É:", id);
+
   try {
-    const result = await pool.query(
-      'DELETE FROM alunos WHERE id=$1 RETURNING id',
-      [req.params.id]
-    );
-    if (result.rows.length === 0) {
+    // 1º PASSO: Busca qual é o e-mail do aluno antes de apagar ele
+    const alunoQuery = await pool.query('SELECT email FROM alunos WHERE id = $1', [id]);
+    
+    if (alunoQuery.rows.length === 0) {
       return res.status(404).json({ erro: 'Aluno não encontrado.' });
     }
-    res.json({ mensagem: 'Aluno removido com sucesso.' });
+    
+    const emailDoAluno = alunoQuery.rows[0].email;
+
+    // 2º PASSO: Apaga todas as notas, boletins e faltas atrelados a este aluno
+    await pool.query('DELETE FROM notas WHERE aluno_id = $1', [id]);
+
+    // 3º PASSO: Apaga o aluno da tabela principal (Cadastro)
+    await pool.query('DELETE FROM alunos WHERE id = $1', [id]);
+
+    // 4º PASSO: Apaga o acesso (Login) desse aluno do sistema
+    if (emailDoAluno) {
+      await pool.query('DELETE FROM usuarios WHERE email = $1', [emailDoAluno]);
+    }
+
+    res.json({ mensagem: 'Aluno, notas e dados de acesso excluídos com sucesso.' });
   } catch (err) {
-    res.status(500).json({ erro: 'Erro ao remover aluno.' });
+    console.error('Erro DETALHADO ao excluir aluno:', err); // Vai mostrar o erro real na sua tela preta
+    res.status(500).json({ erro: 'Erro ao excluir o aluno do banco de dados.' });
   }
 }
 

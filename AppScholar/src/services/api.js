@@ -1,12 +1,15 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native'; // <-- ESSA ERA A LINHA QUE FALTAVA!
+
 // ─────────────────────────────────────────────────────────────
 // LÓGICA INTELIGENTE DE CONEXÃO:
 // Se for Web, usa localhost. Se for App, usa o IP da máquina.
 // ─────────────────────────────────────────────────────────────
+// Altere para o IP que apareceu no seu ipconfig (10.68.55.46)
 const BASE_URL = Platform.OS === 'web' 
   ? 'http://localhost:3000/api' 
-  : 'http://10.68.55.27:3000/api'; // Seu IP atual da rede Wi-Fi
+  : 'http://10.68.55.46:3000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -54,6 +57,11 @@ export async function apiGetProfessores() {
   const response = await api.get('/professores');
   return response.data;
 }
+// Adicione isto na sessão de PROFESSORES do seu api.js
+export async function apiVincularDisciplinas(professorId, disciplinasIds) {
+  const response = await api.post(`/professores/${professorId}/vincular`, { disciplinas_ids: disciplinasIds });
+  return response.data;
+}
 
 export async function apiCriarProfessor(dados) {
   const response = await api.post('/professores', dados);
@@ -92,7 +100,6 @@ export async function buscarCep(cep) {
   const response = await axios.get(`https://viacep.com.br/ws/${cepLimpo}/json/`);
   if (response.data.erro) throw new Error('CEP não encontrado');
   return response.data;
-  // Retorna: { logradouro, bairro, localidade, uf, ... }
 }
 
 // API 2: IBGE – busca lista de estados
@@ -100,19 +107,18 @@ export async function buscarEstados() {
   const response = await axios.get(
     'https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome'
   );
-  return response.data; // [{ id, sigla, nome }, ...]
+  return response.data; 
 }
 
-// API 2: IBGE – busca cidades de um estado (pela sigla, ex: 'SP')
+// API 3: IBGE – busca cidades de um estado 
 export async function buscarCidades(uf) {
   const response = await axios.get(
     `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`
   );
-  return response.data; // [{ id, nome }, ...]
+  return response.data; 
 }
 
 export const apiGetMeuBoletim = async () => {
-  // Supondo que suas rotas de alunos estejam sob /alunos ou /api/alunos
   const response = await api.get('/alunos/meu-boletim'); 
   return response.data;
 };

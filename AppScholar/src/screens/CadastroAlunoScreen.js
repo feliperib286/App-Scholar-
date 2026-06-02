@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SectionList, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SectionList, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../services/api';
 import { colors, spacing, radius } from '../styles/theme';
@@ -9,16 +9,18 @@ export default function CadastroAlunoScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    carregarAlunos();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      carregarAlunos();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const carregarAlunos = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/alunos'); // Ajuste a rota se necessário
+      const response = await api.get('/alunos'); 
       const alunos = response.data;
 
-      // Agrupa os alunos por curso para o SectionList
       const grupos = alunos.reduce((acc, aluno) => {
         const cursoNome = aluno.curso || 'Sem Curso Definido';
         if (!acc[cursoNome]) acc[cursoNome] = [];
@@ -26,7 +28,6 @@ export default function CadastroAlunoScreen({ navigation }) {
         return acc;
       }, {});
 
-      // Formata no padrão que o SectionList do React Native exige: [{ title: 'Curso', data: [alunos] }]
       const secoes = Object.keys(grupos).map(curso => ({
         title: curso,
         data: grupos[curso]
@@ -39,6 +40,46 @@ export default function CadastroAlunoScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  // ─────────────────────────────────────────────────────────────
+  // FUNÇÕES DE EXCLUSÃO (Agora no lugar certinho!)
+  // ─────────────────────────────────────────────────────────────
+const confirmarExclusao = (id, nome) => {
+    // Se estiver rodando no navegador (Web)
+    if (Platform.OS === 'web') {
+      const confirmou = window.confirm(`Atenção!\n\nTem certeza que deseja excluir o aluno(a) ${nome}? Todas as notas e faltas serão apagadas.`);
+      if (confirmou) {
+        excluirAluno(id); // Dispara a exclusão de verdade
+      }
+    } 
+    // Se estiver rodando no Celular (iOS/Android)
+    else {
+      Alert.alert(
+        "Atenção!",
+        `Tem certeza que deseja excluir o aluno(a) ${nome}? Todas as notas e faltas serão apagadas.`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Excluir", style: "destructive", onPress: () => excluirAluno(id) }
+        ]
+      );
+    }
+  };
+const excluirAluno = async (id) => {
+    try {
+      // Vai mostrar um aviso antes para termos certeza que o ID existe
+      console.log("Tentando deletar o ID:", id); 
+      
+      await api.delete(`/alunos/${id}`);
+      Alert.alert("Sucesso", "Aluno excluído do sistema.");
+      carregarAlunos(); 
+    } catch (err) {
+      // 🔴 AGORA ELE VAI MOSTRAR O ERRO REAL!
+      const erroReal = err.response ? err.response.data.erro : err.message;
+      Alert.alert("Erro Técnico", erroReal);
+      console.log("ERRO DETALHADO NO FRONTEND:", err);
+    }
+  };
+  // ─────────────────────────────────────────────────────────────
 
   const renderAluno = ({ item }) => (
     <View style={styles.card}>
@@ -55,16 +96,33 @@ export default function CadastroAlunoScreen({ navigation }) {
 
       {/* Botões de Ação do Aluno */}
       <View style={styles.actionRow}>
-        <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.yellow }]} onPress={() => Alert.alert('Faltas', `Visualizando faltas de ${item.nome}`)}>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { borderColor: colors.yellow, flex: 0.8 }]} 
+          onPress={() => navigation.navigate('LancarNotas', { alunoIdSelecionado: item.id })}
+        >
           <Text style={[styles.actionText, { color: colors.yellow }]}>⚠️ Faltas</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.accent }]} onPress={() => Alert.alert('Horário', `Horário de ${item.nome}`)}>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { borderColor: colors.accent }]} 
+          onPress={() => navigation.navigate('HorarioAluno', { alunoId: item.id })}
+        >
           <Text style={[styles.actionText, { color: colors.accent }]}>📅 Horário</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionBtn, { borderColor: colors.muted }]} onPress={() => Alert.alert('Editar', 'Abrir form de edição')}>
+        <TouchableOpacity 
+          style={[styles.actionBtn, { borderColor: colors.muted, flex: 0.8 }]} 
+          onPress={() => navigation.navigate('EditarAluno', { alunoId: item.id })}
+        >
           <Text style={[styles.actionText, { color: colors.muted }]}>✏️ Editar</Text>
+        </TouchableOpacity>
+
+        {/* NOVO BOTÃO DE EXCLUIR */}
+        <TouchableOpacity 
+          style={[styles.actionBtn, { borderColor: colors.danger, flex: 0.8 }]} 
+          onPress={() => confirmarExclusao(item.id, item.nome)}
+        >
+          <Text style={[styles.actionText, { color: colors.danger }]}>🗑️ Del</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -72,11 +130,20 @@ export default function CadastroAlunoScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← Voltar</Text>
+      <View style={[styles.header, { justifyContent: 'space-between' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.backBtn}>← Voltar</Text>
+          </TouchableOpacity>
+          <Text style={styles.title}>Gerenciar Alunos</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 15, paddingVertical: 8, borderRadius: radius.sm }}
+          onPress={() => navigation.navigate('NovoAluno')}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>+ Novo</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Gerenciar Alunos</Text>
       </View>
 
       <View style={styles.container}>
@@ -120,7 +187,7 @@ const styles = StyleSheet.create({
   matricula: { fontSize: 12, color: colors.muted2 },
   email: { fontSize: 12, color: colors.muted },
   
-  actionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
   actionBtn: { flex: 1, paddingVertical: 8, borderRadius: radius.sm, borderWidth: 1, alignItems: 'center' },
   actionText: { fontSize: 12, fontWeight: 'bold' }
 });

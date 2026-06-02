@@ -1,79 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api, { apiAtualizarAluno } from '../services/api';
+import api from '../services/api';
 import { AppInput, AppButton } from '../components';
 import { colors, radius, spacing } from '../styles/theme';
 
-export default function EditarAlunoScreen({ route, navigation }) {
-  // Recebe o ID do aluno que o Admin clicou na lista
-  const { alunoId } = route.params || {};
-
-  const [loading, setLoading] = useState(true);
+export default function NovoAlunoScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
     nome: '',
     matricula: '',
     email: '',
+    senha: '',
     curso: ''
   });
 
-  useEffect(() => {
-    if (alunoId) {
-      carregarDadosAluno();
-    } else {
-      Alert.alert('Erro', 'Nenhum aluno selecionado.');
-      navigation.goBack();
-    }
-  }, [alunoId]);
-
-  const carregarDadosAluno = async () => {
-    try {
-      // Faz a busca direta do aluno no backend
-      const response = await api.get(`/alunos/${alunoId}`);
-      const aluno = response.data;
-      
-      // Preenche o formulário com os dados atuais do banco
-      setForm({
-        nome: aluno.nome || '',
-        matricula: aluno.matricula || '',
-        email: aluno.email || '',
-        curso: aluno.curso || ''
-      });
-    } catch (err) {
-      Alert.alert('Erro', 'Não foi possível carregar os dados deste aluno.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSalvar = async () => {
-    if (!form.nome || !form.matricula) {
-      return Alert.alert('Aviso', 'Nome e Matrícula são obrigatórios.');
+    if (!form.nome || !form.matricula || !form.email || !form.senha) {
+      return Alert.alert('Aviso', 'Nome, Matrícula, E-mail e Senha são obrigatórios.');
     }
 
     setSaving(true);
     try {
-      // Chama a função de atualização (PUT) do seu api.js
-      await apiAtualizarAluno(alunoId, form);
-      Alert.alert('Sucesso', 'Dados do aluno atualizados com sucesso!');
-      navigation.goBack(); // Volta para a lista de alunos
+      // Envia os dados para criar o aluno no backend
+      await api.post('/alunos', form);
+      Alert.alert('Sucesso', 'Aluno cadastrado com sucesso!');
+      navigation.goBack(); // Volta para a lista e recarrega
     } catch (err) {
-      Alert.alert('Erro', err.response?.data?.erro || 'Erro ao atualizar aluno.');
+      Alert.alert('Erro', err.response?.data?.erro || 'Erro ao realizar o cadastro.');
     } finally {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={{ color: colors.muted, marginTop: 10 }}>Carregando dados do aluno...</Text>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -83,17 +42,17 @@ export default function EditarAlunoScreen({ route, navigation }) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Text style={styles.backBtn}>← Voltar</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Editar Aluno</Text>
+          <Text style={styles.title}>Cadastrar Aluno</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           
-          <Text style={styles.sectionTitle}>DADOS CADASTRAIS</Text>
-          
+          <Text style={styles.sectionTitle}>DADOS PESSOAIS</Text>
           <AppInput 
             label="Nome Completo" 
             value={form.nome} 
             onChangeText={t => setForm({...form, nome: t})} 
+            placeholder="Ex: Maria da Silva" 
           />
           
           <View style={styles.row}>
@@ -102,6 +61,7 @@ export default function EditarAlunoScreen({ route, navigation }) {
                 label="Matrícula (RA)" 
                 value={form.matricula} 
                 onChangeText={t => setForm({...form, matricula: t})} 
+                placeholder="Ex: 20241001" 
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -109,22 +69,33 @@ export default function EditarAlunoScreen({ route, navigation }) {
                 label="Curso / Turma" 
                 value={form.curso} 
                 onChangeText={t => setForm({...form, curso: t})} 
+                placeholder="Ex: 1º Ano Informática" 
               />
             </View>
           </View>
 
+          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>ACESSO AO APLICATIVO</Text>
           <AppInput 
-            label="E-mail de Acesso" 
+            label="E-mail" 
             value={form.email} 
             onChangeText={t => setForm({...form, email: t})} 
+            placeholder="maria@escola.com" 
             autoCapitalize="none"
           />
 
+          <AppInput 
+            label="Senha de Acesso" 
+            value={form.senha} 
+            onChangeText={t => setForm({...form, senha: t})} 
+            placeholder="Defina uma senha" 
+            secureTextEntry={true} 
+          />
+
           <AppButton 
-            title={saving ? "Salvando Alterações..." : "Salvar Alterações"} 
+            title={saving ? "Cadastrando..." : "Finalizar Cadastro"} 
             onPress={handleSalvar} 
             loading={saving}
-            style={{ marginTop: 40 }}
+            style={{ marginTop: 40, marginBottom: 20 }}
           />
 
         </ScrollView>

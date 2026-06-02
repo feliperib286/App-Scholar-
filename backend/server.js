@@ -16,6 +16,14 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+
+// 🟢 ADICIONE ESTE RADAR: Ele vai dedurar TUDO que tentar entrar na sua API
+app.use((req, res, next) => {
+  console.log(`[RADAR] Detectou: ${req.method} ${req.url}`);
+  next();
+});
+// ───────────────────────────────────────────────────────────
+
 // ── Rotas ──────────────────────────────────────────────────
 app.use('/api', authRoutes);          // POST /api/login
 app.use('/api/alunos', alunosRoutes);

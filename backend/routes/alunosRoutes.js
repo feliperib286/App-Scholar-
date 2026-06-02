@@ -12,6 +12,5 @@ router.get('/', autenticar, alunosController.listar);
 router.get('/:id', autenticar, alunosController.buscarPorId);
 router.post('/', autenticar, alunosController.criar);
 router.put('/:id', autenticar, alunosController.atualizar); // <-- Possui a trava inteligente interna
-router.delete('/:id', autenticar, alunosController.remover);
-
+router.delete('/:id', alunosController.remover);
 module.exports = router;

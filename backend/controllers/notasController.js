@@ -2,13 +2,11 @@ const pool = require('../database/db');
 
 // ==========================================
 // GET /api/boletim/:matricula
-// Retorna o boletim completo de um aluno pela matrícula
 // ==========================================
 async function getBoletim(req, res) {
   const { matricula } = req.params;
 
   try {
-    // Busca o aluno pela matrícula
     const alunoResult = await pool.query(
       'SELECT * FROM alunos WHERE matricula = $1',
       [matricula]
@@ -20,7 +18,7 @@ async function getBoletim(req, res) {
 
     const aluno = alunoResult.rows[0];
 
-    // Busca notas com nome da disciplina e professor
+    // Atualizado para trazer as faltas e o tipo de falta
     const notasResult = await pool.query(
       `SELECT
          n.id,
@@ -31,7 +29,9 @@ async function getBoletim(req, res) {
          n.nota1,
          n.nota2,
          n.media,
-         n.situacao
+         n.situacao,
+         n.faltas,
+         n.tipo_falta
        FROM notas n
        JOIN disciplinas d ON n.disciplina_id = d.id
        LEFT JOIN professores p ON d.professor_id = p.id
@@ -53,7 +53,7 @@ async function getBoletim(req, res) {
 }
 
 // ==========================================
-// GET /api/notas - lista todas as notas (Para a secretaria/Admin)
+// GET /api/notas
 // ==========================================
 async function listar(req, res) {
   try {
@@ -71,55 +71,54 @@ async function listar(req, res) {
 }
 
 // ==========================================
-// POST /api/notas - Professor lança ou atualiza nota
+// POST /api/notas - Lançamento Completo
 // ==========================================
 async function lancarNota(req, res) {
-  // O id do professor vem do Token JWT (garantido pelo middleware de autenticação)
   const idProfessor = req.user.id; 
-  const { aluno_id, disciplina_id, nota1, nota2 } = req.body;
+  // Agora recebemos as duas notas e as faltas
+  const { aluno_id, disciplina_id, nota1, nota2, faltas, tipo_falta } = req.body;
 
   if (!aluno_id || !disciplina_id) {
     return res.status(400).json({ erro: 'aluno_id e disciplina_id são obrigatórios.' });
   }
 
   try {
-    // 1. TRAVA DE SEGURANÇA: Verifica se o professor leciona essa disciplina
-    // Adapte o nome da tabela "professor_disciplina" e colunas conforme o seu schema SQL
     const verificaDisciplina = await pool.query(
       'SELECT * FROM professor_disciplina WHERE professor_id = $1 AND disciplina_id = $2',
       [idProfessor, disciplina_id]
     );
 
-    // Se o professor for admin, você pode criar uma exceção aqui futuramente, 
-    // mas pela regra geral, se não leciona a matéria, é bloqueado.
     if (verificaDisciplina.rows.length === 0 && req.user.role !== 'adm') {
       return res.status(403).json({ erro: 'Você não tem permissão para lançar notas nesta disciplina.' });
     }
 
-    // 2. Calcula média e situação automaticamente
+    // Calcula a média garantindo que não dê erro se o valor vier vazio
     const n1 = parseFloat(nota1) || 0;
     const n2 = parseFloat(nota2) || 0;
     const media = parseFloat(((n1 + n2) / 2).toFixed(2));
     const situacao = media >= 6 ? 'Aprovado' : media >= 4 ? 'Rec. Final' : 'Reprovado';
+    
+    // Formata as faltas para garantir que é um número inteiro
+    const qtdFaltas = parseInt(faltas) || 0;
+    const tipo = tipo_falta || 'Comum';
 
-    // 3. UPSERT: cria ou atualiza a nota se já existir no PostgreSQL
     const result = await pool.query(
-      `INSERT INTO notas (aluno_id, disciplina_id, nota1, nota2, media, situacao)
-       VALUES ($1,$2,$3,$4,$5,$6)
+      `INSERT INTO notas (aluno_id, disciplina_id, nota1, nota2, media, situacao, faltas, tipo_falta)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        ON CONFLICT (aluno_id, disciplina_id)
-       DO UPDATE SET nota1=$3, nota2=$4, media=$5, situacao=$6
+       DO UPDATE SET nota1=$3, nota2=$4, media=$5, situacao=$6, faltas=$7, tipo_falta=$8
        RETURNING *`,
-      [aluno_id, disciplina_id, n1, n2, media, situacao]
+      [aluno_id, disciplina_id, n1, n2, media, situacao, qtdFaltas, tipo]
     );
 
     res.status(201).json({
-      mensagem: 'Nota lançada/atualizada com sucesso!',
+      mensagem: 'Registro acadêmico atualizado com sucesso!',
       nota: result.rows[0],
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ erro: 'Erro ao lançar nota no banco de dados.' });
+    res.status(500).json({ erro: 'Erro ao gravar os dados acadêmicos.' });
   }
 }
 

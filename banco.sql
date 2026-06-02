@@ -16,7 +16,11 @@ CREATE TABLE usuarios (
   primeiro_acesso BOOLEAN DEFAULT TRUE,
   created_at  TIMESTAMP DEFAULT NOW()
 );
-
+CREATE TABLE IF NOT EXISTS professor_disciplina (
+    professor_id INTEGER REFERENCES professores(id) ON DELETE CASCADE,
+    disciplina_id INTEGER REFERENCES disciplinas(id) ON DELETE CASCADE,
+    PRIMARY KEY (professor_id, disciplina_id)
+);
 -- 3. Tabela de Alunos
 CREATE TABLE alunos (
   id         SERIAL PRIMARY KEY,
@@ -74,7 +78,8 @@ CREATE TABLE notas (
   UNIQUE(aluno_id, disciplina_id)
 );
 
-
+ALTER TABLE notas ADD COLUMN faltas INTEGER DEFAULT 0;
+ALTER TABLE notas ADD COLUMN tipo_falta VARCHAR(100) DEFAULT 'Comum';
 -- ==========================================================
 -- INSERÇÃO DE DADOS PARA TESTE (Senha de todos: password)
 -- ==========================================================
