@@ -65,26 +65,28 @@ export default function CadastroProfessorScreen({ navigation }) {
         </View>
       </View>
 
-      <View style={styles.disciplinasContainer}>
-        <Text style={styles.disciplinasTitle}>Disciplinas Vinculadas:</Text>
-        <View style={styles.tagsRow}>
-          {item.disciplinas && item.disciplinas.length > 0 ? (
-            item.disciplinas.map((disc, idx) => (
-              <View key={idx} style={styles.tag}><Text style={styles.tagText}>{disc.nome}</Text></View>
-            ))
-          ) : (
-            <View style={styles.tag}><Text style={styles.tagText}>Matérias do Semestre (Simulado)</Text></View>
-          )}
+<View style={styles.disciplinasContainer}>
+  <Text style={styles.disciplinasTitle}>Disciplinas Vinculadas:</Text>
+  <View style={styles.tagsRow}>
+    {item.disciplinas && item.disciplinas.length > 0 ? (
+      item.disciplinas.map((nomeDisc, idx) => (
+        <View key={idx} style={styles.tag}>
+          <Text style={styles.tagText}>{nomeDisc}</Text>
         </View>
-      </View>
+      ))
+    ) : (
+      <Text style={{ fontSize: 12, color: colors.muted }}>Sem disciplinas vinculadas.</Text>
+    )}
+  </View>
+</View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity 
-          style={[styles.actionBtn, { backgroundColor: colors.accent, borderColor: colors.accent }]} 
-          onPress={() => Alert.alert('Lançar Nota', `Abrindo painel de notas para Prof. ${item.nome}`)}
-        >
-          <Text style={[styles.actionText, { color: 'white' }]}>📝 Lançar Nota</Text>
-        </TouchableOpacity>
+<TouchableOpacity 
+  style={[styles.actionBtn, { backgroundColor: colors.accent }]} 
+  onPress={() => navigation.navigate('LancarNotas', { professorId: item.id })}
+>
+  <Text style={{ color: 'white' }}>📝 Lançar Nota</Text>
+</TouchableOpacity>
         
         <TouchableOpacity 
           style={[styles.actionBtn, { borderColor: colors.muted, flex: 0.4 }]} 

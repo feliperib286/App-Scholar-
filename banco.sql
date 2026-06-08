@@ -1,4 +1,6 @@
--- 1. Limpa tudo na ordem correta para não dar erro de dependência
+-- ==========================================================
+-- 1. LIMPEZA DO BANCO (Ordem correta para evitar erros)
+-- ==========================================================
 DROP TABLE IF EXISTS notas CASCADE;
 DROP TABLE IF EXISTS professor_disciplina CASCADE;
 DROP TABLE IF EXISTS disciplinas CASCADE;
@@ -6,28 +8,28 @@ DROP TABLE IF EXISTS professores CASCADE;
 DROP TABLE IF EXISTS alunos CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 
--- 2. Tabela de Usuários (Acesso ao Sistema)
+-- ==========================================================
+-- 2. CRIAÇÃO DAS TABELAS
+-- ==========================================================
+
+-- Tabela de Usuários (Acesso ao Sistema)
 CREATE TABLE usuarios (
-  id          SERIAL PRIMARY KEY,
-  nome        VARCHAR(255),
-  email       VARCHAR(100) NOT NULL UNIQUE,
-  palavra_passe VARCHAR(255) NOT NULL,
-  role        VARCHAR(20)  NOT NULL DEFAULT 'usuario', -- Pode ser 'adm', 'usuario' ou 'professor'
+  id              SERIAL PRIMARY KEY,
+  nome            VARCHAR(255),
+  email           VARCHAR(100) NOT NULL UNIQUE,
+  palavra_passe   VARCHAR(255) NOT NULL,
+  role            VARCHAR(20)  NOT NULL DEFAULT 'usuario', -- 'adm', 'usuario' ou 'professor'
   primeiro_acesso BOOLEAN DEFAULT TRUE,
-  created_at  TIMESTAMP DEFAULT NOW()
+  created_at      TIMESTAMP DEFAULT NOW()
 );
-CREATE TABLE IF NOT EXISTS professor_disciplina (
-    professor_id INTEGER REFERENCES professores(id) ON DELETE CASCADE,
-    disciplina_id INTEGER REFERENCES disciplinas(id) ON DELETE CASCADE,
-    PRIMARY KEY (professor_id, disciplina_id)
-);
--- 3. Tabela de Alunos
+
+-- Tabela de Alunos
 CREATE TABLE alunos (
   id         SERIAL PRIMARY KEY,
   nome       VARCHAR(255) NOT NULL,
   matricula  VARCHAR(45)  NOT NULL UNIQUE,
   curso      VARCHAR(100),
-  email      VARCHAR(100) UNIQUE, -- Adicionado UNIQUE para garantir o cruzamento
+  email      VARCHAR(100) UNIQUE,
   telefone   VARCHAR(20),
   cep        VARCHAR(10),
   endereco   VARCHAR(150),
@@ -36,7 +38,7 @@ CREATE TABLE alunos (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- 4. Tabela de Professores
+-- Tabela de Professores
 CREATE TABLE professores (
   id             SERIAL PRIMARY KEY,
   nome           VARCHAR(255) NOT NULL,
@@ -47,7 +49,7 @@ CREATE TABLE professores (
   created_at     TIMESTAMP DEFAULT NOW()
 );
 
--- 5. Tabela de Disciplinas
+-- Tabela de Disciplinas
 CREATE TABLE disciplinas (
   id            SERIAL PRIMARY KEY,
   nome          VARCHAR(100) NOT NULL,
@@ -58,14 +60,14 @@ CREATE TABLE disciplinas (
   created_at    TIMESTAMP DEFAULT NOW()
 );
 
--- 6. Tabela Auxiliar (Para o backend saber qual professor dá qual matéria)
+-- Tabela Auxiliar (Muitos para Muitos entre Professor e Disciplina)
 CREATE TABLE professor_disciplina (
   professor_id  INTEGER REFERENCES professores(id) ON DELETE CASCADE,
   disciplina_id INTEGER REFERENCES disciplinas(id) ON DELETE CASCADE,
   PRIMARY KEY (professor_id, disciplina_id)
 );
 
--- 7. Tabela de Notas
+-- Tabela de Notas (Com colunas de faltas nativas)
 CREATE TABLE notas (
   id            SERIAL PRIMARY KEY,
   aluno_id      INTEGER NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
@@ -74,21 +76,21 @@ CREATE TABLE notas (
   nota2         DECIMAL(4,2),
   media         DECIMAL(4,2),
   situacao      VARCHAR(20),
+  faltas        INTEGER DEFAULT 0,
+  tipo_falta    VARCHAR(100) DEFAULT 'Comum',
   created_at    TIMESTAMP DEFAULT NOW(),
   UNIQUE(aluno_id, disciplina_id)
 );
 
-ALTER TABLE notas ADD COLUMN faltas INTEGER DEFAULT 0;
-ALTER TABLE notas ADD COLUMN tipo_falta VARCHAR(100) DEFAULT 'Comum';
 -- ==========================================================
--- INSERÇÃO DE DADOS PARA TESTE (Senha de todos: password)
+-- 3. INSERÇÃO DE DADOS PARA TESTE (Senha de todos: 123)
 -- ==========================================================
 
 -- A) Usuários do Sistema
 INSERT INTO usuarios (nome, email, palavra_passe, role, primeiro_acesso) VALUES
-('Admin Fatec', 'admin@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'adm', FALSE),
-('Maria Aparecida', 'maria.santos@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'usuario', TRUE),
-('André Olímpio', 'andre.olimpio@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'professor', FALSE);
+('Admin Fatec', 'admin@fatec.sp.gov.br', '$2a$10$w09ZbeBvL/mGq69s3V9fB.7.ZzO/FvEwG7vQshY5ZfG1I6Z9v12iG', 'adm', FALSE),
+('Maria Aparecida', 'maria.santos@fatec.sp.gov.br', '$2a$10$w09ZbeBvL/mGq69s3V9fB.7.ZzO/FvEwG7vQshY5ZfG1I6Z9v12iG', 'usuario', TRUE),
+('André Olímpio', 'andre.olimpio@fatec.sp.gov.br', '$2a$10$w09ZbeBvL/mGq69s3V9fB.7.ZzO/FvEwG7vQshY5ZfG1I6Z9v12iG', 'professor', FALSE);
 
 -- B) Professores
 INSERT INTO professores (nome, titulacao, area, tempo_docencia, email) VALUES
@@ -103,7 +105,7 @@ INSERT INTO disciplinas (nome, carga_horaria, professor_id, curso, semestre) VAL
 ('Engenharia de Software',                 '60h', 3, 'DSM', '3º'),
 ('Estrutura de Dados',                     '80h', 1, 'DSM', '3º');
 
--- D) Vinculando o Professor André (ID 1) às disciplinas dele (1 e 4)
+-- D) Vinculando o Professor André às suas disciplinas
 INSERT INTO professor_disciplina (professor_id, disciplina_id) VALUES
 (1, 1),
 (1, 4);

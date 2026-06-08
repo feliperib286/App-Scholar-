@@ -1,0 +1,58 @@
+// Exemplo de rota em notasRoutes.js
+const express = require('express');
+const router = express.Router();
+const db = require('../database/db'); // Seu arquivo de conexão
+
+router.post('/lancar', async (req, res) => {
+    const { aluno_id, disciplina_id, nota1, nota2 } = req.body;
+    
+    // Calcula média e situação
+    const media = (parseFloat(nota1) + parseFloat(nota2)) / 2;
+    const situacao = media >= 6.0 ? 'Aprovado' : 'Rec. Final';
+
+    try {
+        const query = `
+            INSERT INTO notas (aluno_id, disciplina_id, nota1, nota2, media, situacao)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (aluno_id, disciplina_id) 
+            DO UPDATE SET 
+                nota1 = EXCLUDED.nota1, 
+                nota2 = EXCLUDED.nota2, 
+                media = EXCLUDED.media, 
+                situacao = EXCLUDED.situacao;
+        `;
+        await db.query(query, [aluno_id, disciplina_id, nota1, nota2, media, situacao]);
+        res.json({ message: "Nota lançada com sucesso!" });
+    } catch (err) {
+        res.status(500).json({ error: "Erro ao salvar: " + err.message });
+    }
+});
+router.get('/boletim/:matricula', async (req, res) => {
+    const { matricula } = req.params;
+    
+    try {
+        const query = `
+            SELECT 
+                d.nome AS disciplina,
+                p.nome AS professor,
+                n.nota1,
+                n.nota2,
+                n.media,
+                n.situacao
+            FROM notas n
+            JOIN alunos a ON n.aluno_id = a.id
+            JOIN disciplinas d ON n.disciplina_id = d.id
+            LEFT JOIN professores p ON d.professor_id = p.id
+            WHERE a.matricula = $1;
+        `;
+        
+        const result = await db.query(query, [matricula]);
+        
+        // Retorna um objeto com a lista de disciplinas
+        res.json({ disciplinas: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: "Erro ao buscar boletim: " + err.message });
+    }
+});
+
+module.exports = router;

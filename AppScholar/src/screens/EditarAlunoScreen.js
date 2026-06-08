@@ -3,20 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api, { apiAtualizarAluno } from '../services/api';
 import { AppInput, AppButton } from '../components';
-import { colors, radius, spacing } from '../styles/theme';
+import { colors } from '../styles/theme';
 
 export default function EditarAlunoScreen({ route, navigation }) {
-  // Recebe o ID do aluno que o Admin clicou na lista
   const { alunoId } = route.params || {};
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
-    nome: '',
-    matricula: '',
-    email: '',
-    curso: ''
+    nome: '', matricula: '', email: '', curso: '', 
+    telefone: '', cep: '', endereco: '', cidade: '', estado: ''
   });
 
   useEffect(() => {
@@ -30,16 +26,20 @@ export default function EditarAlunoScreen({ route, navigation }) {
 
   const carregarDadosAluno = async () => {
     try {
-      // Faz a busca direta do aluno no backend
       const response = await api.get(`/alunos/${alunoId}`);
       const aluno = response.data;
       
-      // Preenche o formulário com os dados atuais do banco
+      // AGORA BUSCAMOS TODOS OS CAMPOS DO BANCO
       setForm({
         nome: aluno.nome || '',
         matricula: aluno.matricula || '',
         email: aluno.email || '',
-        curso: aluno.curso || ''
+        curso: aluno.curso || '',
+        telefone: aluno.telefone || '',
+        cep: aluno.cep || '',
+        endereco: aluno.endereco || '',
+        cidade: aluno.cidade || '',
+        estado: aluno.estado || ''
       });
     } catch (err) {
       Alert.alert('Erro', 'Não foi possível carregar os dados deste aluno.');
@@ -55,12 +55,12 @@ export default function EditarAlunoScreen({ route, navigation }) {
 
     setSaving(true);
     try {
-      // Chama a função de atualização (PUT) do seu api.js
       await apiAtualizarAluno(alunoId, form);
-      Alert.alert('Sucesso', 'Dados do aluno atualizados com sucesso!');
-      navigation.goBack(); // Volta para a lista de alunos
+      Alert.alert('Sucesso', 'Dados do aluno atualizados!');
+      navigation.goBack();
     } catch (err) {
-      Alert.alert('Erro', err.response?.data?.erro || 'Erro ao atualizar aluno.');
+      console.log("=== ERRO AO SALVAR ===", err.response?.data);
+      Alert.alert('Erro', 'Falha ao salvar. Verifique o terminal.');
     } finally {
       setSaving(false);
     }
@@ -70,7 +70,6 @@ export default function EditarAlunoScreen({ route, navigation }) {
     return (
       <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={{ color: colors.muted, marginTop: 10 }}>Carregando dados do aluno...</Text>
       </SafeAreaView>
     );
   }
@@ -78,55 +77,22 @@ export default function EditarAlunoScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Voltar</Text>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.backBtn}>← Voltar</Text></TouchableOpacity>
           <Text style={styles.title}>Editar Aluno</Text>
         </View>
 
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-          
-          <Text style={styles.sectionTitle}>DADOS CADASTRAIS</Text>
-          
-          <AppInput 
-            label="Nome Completo" 
-            value={form.nome} 
-            onChangeText={t => setForm({...form, nome: t})} 
-          />
-          
+        <ScrollView contentContainerStyle={styles.container}>
+          <AppInput label="Nome" value={form.nome} onChangeText={t => setForm({...form, nome: t})} />
           <View style={styles.row}>
-            <View style={{ flex: 1, marginRight: 10 }}>
-              <AppInput 
-                label="Matrícula (RA)" 
-                value={form.matricula} 
-                onChangeText={t => setForm({...form, matricula: t})} 
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppInput 
-                label="Curso / Turma" 
-                value={form.curso} 
-                onChangeText={t => setForm({...form, curso: t})} 
-              />
-            </View>
+            <View style={{ flex: 1 }}><AppInput label="RA" value={form.matricula} onChangeText={t => setForm({...form, matricula: t})} /></View>
+            <View style={{ flex: 1, marginLeft: 10 }}><AppInput label="Curso" value={form.curso} onChangeText={t => setForm({...form, curso: t})} /></View>
           </View>
-
-          <AppInput 
-            label="E-mail de Acesso" 
-            value={form.email} 
-            onChangeText={t => setForm({...form, email: t})} 
-            autoCapitalize="none"
-          />
-
-          <AppButton 
-            title={saving ? "Salvando Alterações..." : "Salvar Alterações"} 
-            onPress={handleSalvar} 
-            loading={saving}
-            style={{ marginTop: 40 }}
-          />
-
+          <AppInput label="E-mail" value={form.email} onChangeText={t => setForm({...form, email: t})} autoCapitalize="none" />
+          <AppInput label="Telefone" value={form.telefone} onChangeText={t => setForm({...form, telefone: t})} />
+          <AppInput label="Endereço" value={form.endereco} onChangeText={t => setForm({...form, endereco: t})} />
+          
+          <AppButton title={saving ? "Salvando..." : "Salvar"} onPress={handleSalvar} loading={saving} style={{ marginTop: 20 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -135,10 +101,9 @@ export default function EditarAlunoScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { padding: 20, backgroundColor: colors.surface2, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn: { color: colors.primary, marginRight: 15, fontSize: 16, fontWeight: '600' },
-  title: { fontSize: 20, fontWeight: 'bold', color: colors.text },
+  header: { padding: 20, flexDirection: 'row', alignItems: 'center' },
+  backBtn: { color: colors.primary, fontSize: 16 },
+  title: { fontSize: 20, fontWeight: 'bold', marginLeft: 15 },
   container: { padding: 20 },
-  sectionTitle: { fontSize: 12, color: colors.muted, fontWeight: 'bold', marginBottom: 15, letterSpacing: 1 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' }
+  row: { flexDirection: 'row' }
 });

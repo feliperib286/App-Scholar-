@@ -1,9 +1,16 @@
 const pool = require('../database/db');
-
-// GET /api/professores
+// No seu controller de professores, use esta consulta:
 async function listar(req, res) {
   try {
-    const result = await pool.query('SELECT * FROM professores ORDER BY nome ASC');
+    const query = `
+      SELECT p.*, 
+             COALESCE(json_agg(d.nome) FILTER (WHERE d.id IS NOT NULL), '[]') as disciplinas
+      FROM professores p
+      LEFT JOIN professor_disciplina pd ON p.id = pd.professor_id
+      LEFT JOIN disciplinas d ON pd.disciplina_id = d.id
+      GROUP BY p.id
+    `;
+    const result = await pool.query(query);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ erro: 'Erro ao listar professores.' });

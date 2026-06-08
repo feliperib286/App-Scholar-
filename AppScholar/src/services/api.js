@@ -42,7 +42,9 @@ export async function apiCriarAluno(dados) {
   return response.data;
 }
 
+// No seu services/api.js
 export async function apiAtualizarAluno(id, dados) {
+  // A URL deve ser exatamente como o back-end espera
   const response = await api.put(`/alunos/${id}`, dados);
   return response.data;
 }

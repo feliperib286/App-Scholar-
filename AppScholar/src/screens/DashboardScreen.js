@@ -9,47 +9,37 @@ export default function DashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [stats, setStats] = useState({ alunos: '—', professores: '—', disciplinas: '—' });
 
-  // Pega o perfil do usuário logado (se não tiver, assume 'usuario' que é o aluno)
   const role = user?.role || 'usuario'; 
 
-  // ==========================================
-  // LÓGICA DE MÓDULOS BASEADA NO PERFIL
-  // ==========================================
   const getModulos = () => {
     switch (role) {
       case 'adm':
         return [
-          { key: 'CadastroAluno',      label: 'Gerenciar\nAlunos',      icon: '🎒', accentTop: colors.accent },
-          { key: 'CadastroProfessor',  label: 'Gerenciar\nProfessores', icon: '👨‍🏫', accentTop: colors.green },
-          { key: 'CadastroDisciplina', label: 'Gerenciar\nDisciplinas', icon: '📚', accentTop: '#a78bfa' },
+          { key: 'CadastroAluno', label: 'Gerenciar\nAlunos', icon: '🎒', accentTop: colors.accent },
+          { key: 'CadastroProfessor', label: 'Gerenciar\nProfessores', icon: '👨‍🏫', accentTop: colors.green },
+          { key: 'GerenciarDisciplinasScreen', label: 'Gerenciar\nDisciplinas', icon: '📚', accentTop: '#a78bfa' },
         ];
       case 'professor':
         return [
-          // NOVO BOTÃO AQUI:
-          { key: 'EditarProfessor',    label: 'Meus\nDados',            icon: '👤', accentTop: colors.primary },
-          { key: 'MinhasDisciplinas',  label: 'Minhas\nDisciplinas',    icon: '📚', accentTop: colors.green },
-          { key: 'LancarNotas',        label: 'Lançar\nNotas',          icon: '📝', accentTop: '#a78bfa' },
+          { key: 'EditarProfessor', label: 'Meus\nDados', icon: '👤', accentTop: colors.primary },
+          { key: 'MinhasDisciplinas', label: 'Minhas\nDisciplinas', icon: '📚', accentTop: colors.green },
+          { key: 'LancarNotas', label: 'Lançar\nNotas', icon: '📝', accentTop: '#a78bfa' },
         ];
-      case 'usuario': // Aluno
+      case 'usuario':
       default:
         return [
-          // NOVO BOTÃO AQUI:
-          { key: 'EditarAluno',        label: 'Meus\nDados',            icon: '👤', accentTop: colors.primary },
-          { key: 'Boletim',            label: 'Consultar\nMeu Boletim', icon: '📊', accentTop: colors.yellow },
-          { key: 'MinhaGrade',         label: 'Minha Grade\nHorária',   icon: '📅', accentTop: colors.accent },
+          { key: 'EditarAluno', label: 'Meus\nDados', icon: '👤', accentTop: colors.primary },
+          { key: 'Boletim', label: 'Consultar\nMeu Boletim', icon: '📊', accentTop: colors.yellow },
+          { key: 'MinhaGrade', label: 'Minha Grade\nHorária', icon: '📅', accentTop: colors.accent },
         ];
     }
   };
+
   const modulosPermitidos = getModulos();
 
-  // ==========================================
-  // EFEITO: CARREGAR ESTATÍSTICAS SÓ PARA ADMIN
-  // ==========================================
   useEffect(() => {
     async function carregarStats() {
-      // Impede que Alunos/Professores façam requisições nas rotas protegidas de Admin
       if (role !== 'adm') return; 
-
       try {
         const [alunos, professores, disciplinas] = await Promise.all([
           apiGetAlunos(),
@@ -57,18 +47,17 @@ export default function DashboardScreen({ navigation }) {
           apiGetDisciplinas(),
         ]);
         setStats({
-          alunos:      alunos.length,
+          alunos: alunos.length,
           professores: professores.length,
           disciplinas: disciplinas.length,
         });
-      } catch {
-        // backend offline ou erro – mantém '—'
+      } catch (err) {
+        console.error("Erro ao carregar stats:", err);
       }
     }
     carregarStats();
   }, [role]);
 
-  // Função para nomear o perfil visualmente na tela
   const getNomeDoPerfil = () => {
     if (role === 'adm') return 'Administração';
     if (role === 'professor') return 'Portal do Professor';
@@ -78,8 +67,7 @@ export default function DashboardScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-
-        {/* ================= HEADER ================= */}
+        {/* HEADER */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{getNomeDoPerfil()}</Text>
@@ -93,7 +81,7 @@ export default function DashboardScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* ================= MÓDULOS DINÂMICOS ================= */}
+        {/* MÓDULOS */}
         <Text style={styles.sectionTitle}>MÓDULOS DE ACESSO</Text>
         <View style={styles.grid}>
           {modulosPermitidos.map(m => (
@@ -111,13 +99,13 @@ export default function DashboardScreen({ navigation }) {
           ))}
         </View>
 
-        {/* ================= RESUMO SEMESTRAL (SÓ ADMIN) ================= */}
+        {/* ESTATÍSTICAS ADMIN */}
         {role === 'adm' && (
           <View>
-            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>RESUMO GERAL DA INSTITUIÇÃO</Text>
+            <Text style={[styles.sectionTitle, { marginTop: 20 }]}>RESUMO GERAL</Text>
             <View style={styles.statsRow}>
               {[
-                { label: 'Alunos',      value: stats.alunos },
+                { label: 'Alunos', value: stats.alunos },
                 { label: 'Professores', value: stats.professores },
                 { label: 'Disciplinas', value: stats.disciplinas },
               ].map(s => (
@@ -129,7 +117,6 @@ export default function DashboardScreen({ navigation }) {
             </View>
           </View>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -147,12 +134,12 @@ const styles = StyleSheet.create({
   logoutText: { fontSize: 12, color: colors.muted2 },
   sectionTitle: { fontSize: 10, color: colors.muted2, letterSpacing: 1, fontWeight: '700', marginTop: 4 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  card: { width: '48%', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, overflow: 'hidden', position: 'relative' },
+  card: { width: '47%', backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, overflow: 'hidden' },
   cardAccent: { position: 'absolute', top: 0, left: 0, right: 0, height: 3 },
   cardIcon: { fontSize: 28, marginTop: 6, marginBottom: 8 },
   cardLabel: { fontSize: 13, fontWeight: '700', color: colors.text, lineHeight: 18 },
   cardArrow: { fontSize: 11, color: colors.muted, marginTop: 6 },
-  statsRow: { flexDirection: 'row', gap: 8, paddingBottom: 24, marginTop: 10 },
+  statsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
   statCard: { flex: 1, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.md, alignItems: 'center' },
   statNum: { fontSize: 22, fontWeight: '800', color: colors.accent2 },
   statLabel: { fontSize: 11, color: colors.muted, marginTop: 2 },

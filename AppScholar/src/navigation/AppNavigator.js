@@ -3,36 +3,27 @@ import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../hooks/useAuth';
+import { colors } from '../styles/theme';
 
-// Importação de Telas de Autenticação
-import LoginScreen              from '../screens/LoginScreen';
-import NovaSenhaScreen          from '../screens/NovaSenhaScreen';
-
-// Importação de Telas Principais
-import DashboardScreen          from '../screens/DashboardScreen';
-
-// Importação de Telas de Admin (Gerenciamento)
-import CadastroAlunoScreen      from '../screens/CadastroAlunoScreen';
-import CadastroProfessorScreen  from '../screens/CadastroProfessorScreen';
+// Importação de Telas
+import LoginScreen from '../screens/LoginScreen';
+import NovaSenhaScreen from '../screens/NovaSenhaScreen';
+import DashboardScreen from '../screens/DashboardScreen';
+import CadastroAlunoScreen from '../screens/CadastroAlunoScreen';
+import CadastroProfessorScreen from '../screens/CadastroProfessorScreen';
 import CadastroDisciplinaScreen from '../screens/CadastroDisciplinaScreen';
+import GerenciarDisciplinasScreen from '../screens/GerenciarDisciplinasScreen';
+import EditarDisciplinaScreen from '../screens/EditarDisciplinaScreen'; // Adicionado
 import NovoProfessorScreen from '../screens/NovoProfessorScreen';
 import NovoAlunoScreen from '../screens/NovoAlunoScreen';
-
-// Importação de Telas Extras de Admin
-import FaltasAlunoScreen        from '../screens/FaltasAlunoScreen';
-import HorarioAlunoScreen       from '../screens/HorarioAlunoScreen';
-import EditarProfessorScreen    from '../screens/EditarProfessorScreen';
+import FaltasAlunoScreen from '../screens/FaltasAlunoScreen';
+import HorarioAlunoScreen from '../screens/HorarioAlunoScreen';
+import EditarProfessorScreen from '../screens/EditarProfessorScreen';
 import EditarAlunoScreen from '../screens/EditarAlunoScreen';
-
-// Importação de Telas de Aluno e Genéricas
-import BoletimScreen            from '../screens/BoletimScreen';
-import MinhaGradeScreen         from '../screens/MinhaGradeScreen';
-
-// Importação de Telas do Professor
-import MinhasDisciplinasScreen  from '../screens/MinhasDisciplinasScreen';
-import LancarNotasScreen        from '../screens/LancarNotasScreen';
-
-import { colors } from '../styles/theme';
+import BoletimScreen from '../screens/BoletimScreen';
+import MinhaGradeScreen from '../screens/MinhaGradeScreen';
+import MinhasDisciplinasScreen from '../screens/MinhasDisciplinasScreen';
+import LancarNotasScreen from '../screens/LancarNotasScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -42,7 +33,6 @@ const screenOptions = {
   animation: 'slide_from_right',
 };
 
-// Telas para quem NÃO ESTÁ logado
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
@@ -52,40 +42,41 @@ function AuthStack() {
   );
 }
 
-// Telas para quem ESTÁ logado
 function AppStack() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
-      {/* Tela Principal */}
-      <Stack.Screen name="Dashboard"          component={DashboardScreen} />
+      <Stack.Screen name="Dashboard" component={DashboardScreen} />
       
-      {/* Telas Principais do Admin */}
-      <Stack.Screen name="CadastroAluno"      component={CadastroAlunoScreen} />
-      <Stack.Screen name="CadastroProfessor"  component={CadastroProfessorScreen} />
+      {/* Admin */}
+      <Stack.Screen name="CadastroAluno" component={CadastroAlunoScreen} />
+      <Stack.Screen name="CadastroProfessor" component={CadastroProfessorScreen} />
       <Stack.Screen name="CadastroDisciplina" component={CadastroDisciplinaScreen} />
+      <Stack.Screen name="GerenciarDisciplinasScreen" component={GerenciarDisciplinasScreen} />
+      <Stack.Screen name="EditarDisciplinaScreen" component={EditarDisciplinaScreen} />
       <Stack.Screen name="NovoProfessor" component={NovoProfessorScreen} />
-      
-      {/* Telas de Ação (Acessadas pelos botões de Gerenciar) */}
-      <Stack.Screen name="FaltasAluno"        component={FaltasAlunoScreen} />
-      <Stack.Screen name="HorarioAluno"       component={HorarioAlunoScreen} />
-      <Stack.Screen name="EditarAluno"        component={EditarAlunoScreen} />
-      <Stack.Screen name="EditarProfessor"    component={EditarProfessorScreen} />
       <Stack.Screen name="NovoAluno" component={NovoAlunoScreen} />
+      
+      {/* Edição */}
+      <Stack.Screen name="EditarAluno" component={EditarAlunoScreen} />
+      <Stack.Screen name="EditarProfessor" component={EditarProfessorScreen} />
+      
+      {/* Ações */}
+      <Stack.Screen name="FaltasAluno" component={FaltasAlunoScreen} />
+      <Stack.Screen name="HorarioAluno" component={HorarioAlunoScreen} />
+      
+      {/* Aluno */}
+      <Stack.Screen name="Boletim" component={BoletimScreen} />
+      <Stack.Screen name="MinhaGrade" component={MinhaGradeScreen} />
 
-      {/* Telas do Aluno */}
-      <Stack.Screen name="Boletim"            component={BoletimScreen} />
-      <Stack.Screen name="MinhaGrade"         component={MinhaGradeScreen} />
-
-      {/* Telas do Professor */}
-      <Stack.Screen name="MinhasDisciplinas"  component={MinhasDisciplinasScreen} />
-      <Stack.Screen name="LancarNotas"        component={LancarNotasScreen} />
+      {/* Professor */}
+      <Stack.Screen name="MinhasDisciplinas" component={MinhasDisciplinasScreen} />
+      <Stack.Screen name="LancarNotas" component={LancarNotasScreen} />
     </Stack.Navigator>
   );
 }
 
 export default function AppNavigator() {
   const { user, loading } = useAuth();
-
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -93,7 +84,6 @@ export default function AppNavigator() {
       </View>
     );
   }
-
   return (
     <NavigationContainer>
       {user ? <AppStack /> : <AuthStack />}

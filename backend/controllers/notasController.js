@@ -2,6 +2,7 @@ const pool = require('../database/db');
 
 // ==========================================
 // GET /api/boletim/:matricula
+// Busca o boletim detalhado de um aluno específico
 // ==========================================
 async function getBoletim(req, res) {
   const { matricula } = req.params;
@@ -18,20 +19,19 @@ async function getBoletim(req, res) {
 
     const aluno = alunoResult.rows[0];
 
-    // Atualizado para trazer as faltas e o tipo de falta
     const notasResult = await pool.query(
       `SELECT
-         n.id,
-         d.nome  AS disciplina,
-         d.semestre,
-         d.carga_horaria,
-         p.nome  AS professor,
-         n.nota1,
-         n.nota2,
-         n.media,
-         n.situacao,
-         n.faltas,
-         n.tipo_falta
+          n.id,
+          d.nome AS disciplina,
+          d.semestre,
+          d.carga_horaria,
+          p.nome AS professor,
+          n.nota1,
+          n.nota2,
+          n.media,
+          n.situacao,
+          n.faltas,
+          n.tipo_falta
        FROM notas n
        JOIN disciplinas d ON n.disciplina_id = d.id
        LEFT JOIN professores p ON d.professor_id = p.id
@@ -41,19 +41,20 @@ async function getBoletim(req, res) {
     );
 
     res.json({
-      aluno:      aluno.nome,
-      matricula:  aluno.matricula,
-      curso:      aluno.curso,
+      aluno: aluno.nome,
+      matricula: aluno.matricula,
+      curso: aluno.curso,
       disciplinas: notasResult.rows,
     });
   } catch (err) {
-    console.error(err);
+    console.error('Erro em getBoletim:', err);
     res.status(500).json({ erro: 'Erro ao buscar boletim.' });
   }
 }
 
 // ==========================================
 // GET /api/notas
+// Lista todas as notas para visualização do Admin/Professor
 // ==========================================
 async function listar(req, res) {
   try {
@@ -66,16 +67,17 @@ async function listar(req, res) {
     );
     res.json(result.rows);
   } catch (err) {
+    console.error('Erro em listar notas:', err);
     res.status(500).json({ erro: 'Erro ao listar notas.' });
   }
 }
 
 // ==========================================
-// POST /api/notas - Lançamento Completo
+// POST /api/notas
+// Lançamento ou atualização de notas e faltas
 // ==========================================
 async function lancarNota(req, res) {
   const idProfessor = req.user.id; 
-  // Agora recebemos as duas notas e as faltas
   const { aluno_id, disciplina_id, nota1, nota2, faltas, tipo_falta } = req.body;
 
   if (!aluno_id || !disciplina_id) {
@@ -83,6 +85,7 @@ async function lancarNota(req, res) {
   }
 
   try {
+    // Validação de permissão: apenas o dono da matéria ou admin podem lançar
     const verificaDisciplina = await pool.query(
       'SELECT * FROM professor_disciplina WHERE professor_id = $1 AND disciplina_id = $2',
       [idProfessor, disciplina_id]
@@ -92,13 +95,11 @@ async function lancarNota(req, res) {
       return res.status(403).json({ erro: 'Você não tem permissão para lançar notas nesta disciplina.' });
     }
 
-    // Calcula a média garantindo que não dê erro se o valor vier vazio
+    // Processamento de dados
     const n1 = parseFloat(nota1) || 0;
     const n2 = parseFloat(nota2) || 0;
     const media = parseFloat(((n1 + n2) / 2).toFixed(2));
     const situacao = media >= 6 ? 'Aprovado' : media >= 4 ? 'Rec. Final' : 'Reprovado';
-    
-    // Formata as faltas para garantir que é um número inteiro
     const qtdFaltas = parseInt(faltas) || 0;
     const tipo = tipo_falta || 'Comum';
 
@@ -117,7 +118,7 @@ async function lancarNota(req, res) {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error('Erro ao lançar nota:', err);
     res.status(500).json({ erro: 'Erro ao gravar os dados acadêmicos.' });
   }
 }
