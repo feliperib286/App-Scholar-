@@ -80,7 +80,7 @@ export default function LancarNotasScreen({ route, navigation }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Voltar</Text>
+            <Text style={{ color: 'white' }}>← Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Lançar Notas e Faltas</Text>
         </View>
@@ -144,7 +144,7 @@ export default function LancarNotasScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
   header: { padding: 20, backgroundColor: colors.surface2, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn: { color: colors.primary, marginRight: 15, fontSize: 16, fontWeight: '600' },
+  backBtn: { color: 'white', marginRight: 15, fontSize: 16, fontWeight: '600' },
   title: { fontSize: 20, fontWeight: 'bold', color: colors.text },
   container: { padding: 20 },
   sectionTitle: { fontSize: 12, color: colors.muted, fontWeight: 'bold', marginBottom: 10, marginTop: 20, letterSpacing: 1 },

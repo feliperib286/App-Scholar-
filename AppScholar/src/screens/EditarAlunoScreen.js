@@ -78,7 +78,7 @@ export default function EditarAlunoScreen({ route, navigation }) {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.backBtn}>← Voltar</Text></TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}><Text style={{ color: 'white' }}>← Voltar</Text></TouchableOpacity>
           <Text style={styles.title}>Editar Aluno</Text>
         </View>
 

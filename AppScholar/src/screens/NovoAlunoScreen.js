@@ -40,7 +40,7 @@ export default function NovoAlunoScreen({ navigation }) {
         
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Voltar</Text>
+            <Text style={{ color: 'white' }}>← Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Cadastrar Aluno</Text>
         </View>

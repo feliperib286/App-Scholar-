@@ -111,7 +111,7 @@ export default function CadastroProfessorScreen({ navigation }) {
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Voltar</Text>
+            <Text style={{ color: 'white' }}>← Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Professores</Text>
         </View>

@@ -1,42 +1,36 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../hooks/useAuth';
-import { apiGetAlunos, apiGetProfessores, apiGetDisciplinas } from '../services/api';
+import api, { apiGetAlunos, apiGetProfessores, apiGetDisciplinas } from '../services/api';
 import { colors, spacing, radius } from '../styles/theme';
+import { AppButton } from '../components';
 
 export default function DashboardScreen({ navigation }) {
   const { user, logout } = useAuth();
   const [stats, setStats] = useState({ alunos: '—', professores: '—', disciplinas: '—' });
+  const [temNovoAviso, setTemNovoAviso] = useState(false);
 
   const role = user?.role || 'usuario'; 
 
-  const getModulos = () => {
-    switch (role) {
-      case 'adm':
-        return [
-          { key: 'CadastroAluno', label: 'Gerenciar\nAlunos', icon: '🎒', accentTop: colors.accent },
-          { key: 'CadastroProfessor', label: 'Gerenciar\nProfessores', icon: '👨‍🏫', accentTop: colors.green },
-          { key: 'GerenciarDisciplinasScreen', label: 'Gerenciar\nDisciplinas', icon: '📚', accentTop: '#a78bfa' },
-        ];
-      case 'professor':
-        return [
-          { key: 'EditarProfessor', label: 'Meus\nDados', icon: '👤', accentTop: colors.primary },
-          { key: 'MinhasDisciplinas', label: 'Minhas\nDisciplinas', icon: '📚', accentTop: colors.green },
-          { key: 'LancarNotas', label: 'Lançar\nNotas', icon: '📝', accentTop: '#a78bfa' },
-        ];
-      case 'usuario':
-      default:
-        return [
-          { key: 'EditarAluno', label: 'Meus\nDados', icon: '👤', accentTop: colors.primary },
-          { key: 'Boletim', label: 'Consultar\nMeu Boletim', icon: '📊', accentTop: colors.yellow },
-          { key: 'MinhaGrade', label: 'Minha Grade\nHorária', icon: '📅', accentTop: colors.accent },
-        ];
+  // Efeito para verificar avisos
+  useEffect(() => {
+    async function checarNovosAvisos() {
+      try {
+        const { data } = await api.get('/avisos');
+        if (data.length > 0) {
+          const ultimaLida = await AsyncStorage.getItem('ultimaLeituraAviso');
+          if (!ultimaLida || new Date(data[0].data_publicacao) > new Date(ultimaLida)) {
+            setTemNovoAviso(true);
+          }
+        }
+      } catch (e) { console.error("Erro ao checar avisos", e); }
     }
-  };
+    checarNovosAvisos();
+  }, []);
 
-  const modulosPermitidos = getModulos();
-
+  // Efeito para carregar estatísticas
   useEffect(() => {
     async function carregarStats() {
       if (role !== 'adm') return; 
@@ -46,69 +40,73 @@ export default function DashboardScreen({ navigation }) {
           apiGetProfessores(),
           apiGetDisciplinas(),
         ]);
-        setStats({
-          alunos: alunos.length,
-          professores: professores.length,
-          disciplinas: disciplinas.length,
-        });
-      } catch (err) {
-        console.error("Erro ao carregar stats:", err);
-      }
+        setStats({ alunos: alunos.length, professores: professores.length, disciplinas: disciplinas.length });
+      } catch (err) { console.error("Erro ao carregar stats:", err); }
     }
     carregarStats();
   }, [role]);
 
-  const getNomeDoPerfil = () => {
-    if (role === 'adm') return 'Administração';
-    if (role === 'professor') return 'Portal do Professor';
-    return 'Portal do Aluno';
+  const getModulos = () => {
+    const avisosModule = { key: 'ListaAvisos', label: 'Avisos\nAcadêmicos', icon: '📢', accentTop: colors.accent2 };
+    
+    switch (role) {
+      case 'adm':
+        return [
+          { key: 'CadastroAluno', label: 'Gerenciar\nAlunos', icon: '🎒', accentTop: colors.accent },
+          { key: 'CadastroProfessor', label: 'Gerenciar\nProfessores', icon: '👨‍🏫', accentTop: colors.green },
+          { key: 'GerenciarDisciplinasScreen', label: 'Gerenciar\nDisciplinas', icon: '📚', accentTop: '#a78bfa' },
+          avisosModule
+        ];
+      case 'professor':
+        return [
+          { key: 'EditarProfessor', label: 'Meus\nDados', icon: '👤', accentTop: colors.primary },
+          { key: 'MinhasDisciplinas', label: 'Minhas\nDisciplinas', icon: '📚', accentTop: colors.green },
+          { key: 'LancarNotas', label: 'Lançar\nNotas', icon: '📝', accentTop: '#a78bfa' },
+          avisosModule
+        ];
+      default:
+        return [
+          { key: 'EditarAluno', label: 'Meus\nDados', icon: '👤', accentTop: colors.primary },
+          { key: 'Boletim', label: 'Consultar\nMeu Boletim', icon: '📊', accentTop: colors.yellow },
+          { key: 'MinhaGrade', label: 'Minha Grade\nHorária', icon: '📅', accentTop: colors.accent },
+          avisosModule
+        ];
+    }
   };
+
+  const modulosPermitidos = getModulos();
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.container}>
-        {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>{getNomeDoPerfil()}</Text>
+            <Text style={{ color: 'white' }}>{role === 'adm' ? 'Administração' : role === 'professor' ? 'Portal do Professor' : 'Portal do Aluno'}</Text>
             <Text style={styles.userName}>{user?.nome || user?.email?.split('@')[0]} 👋</Text>
-            <View style={styles.periodBadge}>
-              <Text style={styles.periodText}>📅 2026 · 1º Semestre</Text>
-            </View>
           </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-            <Text style={styles.logoutText}>Sair</Text>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>Sair</Text></TouchableOpacity>
         </View>
 
-        {/* MÓDULOS */}
-        <Text style={styles.sectionTitle}>MÓDULOS DE ACESSO</Text>
+        {(role === 'adm' || role === 'professor') && (
+          <AppButton title="Criar Novo Aviso" onPress={() => navigation.navigate('CriarAviso')} style={{ marginBottom: 10 }} />
+        )}
+
         <View style={styles.grid}>
           {modulosPermitidos.map(m => (
-            <TouchableOpacity 
-              key={m.key} 
-              style={styles.card} 
-              onPress={() => navigation.navigate(m.key)} 
-              activeOpacity={0.75}
-            >
+            <TouchableOpacity key={m.key} style={styles.card} onPress={() => navigation.navigate(m.key)} activeOpacity={0.75}>
+              {m.key === 'ListaAvisos' && temNovoAviso && <View style={styles.badge} />}
               <View style={[styles.cardAccent, { backgroundColor: m.accentTop }]} />
               <Text style={styles.cardIcon}>{m.icon}</Text>
               <Text style={styles.cardLabel}>{m.label}</Text>
-              <Text style={styles.cardArrow}>Acessar →</Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* ESTATÍSTICAS ADMIN */}
         {role === 'adm' && (
           <View>
             <Text style={[styles.sectionTitle, { marginTop: 20 }]}>RESUMO GERAL</Text>
             <View style={styles.statsRow}>
-              {[
-                { label: 'Alunos', value: stats.alunos },
-                { label: 'Professores', value: stats.professores },
-                { label: 'Disciplinas', value: stats.disciplinas },
-              ].map(s => (
+              {[ {label: 'Alunos', value: stats.alunos}, {label: 'Professores', value: stats.professores}, {label: 'Disciplinas', value: stats.disciplinas} ].map(s => (
                 <View key={s.label} style={styles.statCard}>
                   <Text style={styles.statNum}>{s.value}</Text>
                   <Text style={styles.statLabel}>{s.label}</Text>
@@ -143,4 +141,16 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, padding: spacing.md, alignItems: 'center' },
   statNum: { fontSize: 22, fontWeight: '800', color: colors.accent2 },
   statLabel: { fontSize: 11, color: colors.muted, marginTop: 2 },
+  badge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: 'red',
+    borderWidth: 2,
+    borderColor: 'white',
+    zIndex: 1
+  },
 });

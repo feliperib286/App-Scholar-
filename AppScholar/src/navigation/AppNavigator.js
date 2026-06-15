@@ -13,7 +13,7 @@ import CadastroAlunoScreen from '../screens/CadastroAlunoScreen';
 import CadastroProfessorScreen from '../screens/CadastroProfessorScreen';
 import CadastroDisciplinaScreen from '../screens/CadastroDisciplinaScreen';
 import GerenciarDisciplinasScreen from '../screens/GerenciarDisciplinasScreen';
-import EditarDisciplinaScreen from '../screens/EditarDisciplinaScreen'; // Adicionado
+import EditarDisciplinaScreen from '../screens/EditarDisciplinaScreen';
 import NovoProfessorScreen from '../screens/NovoProfessorScreen';
 import NovoAlunoScreen from '../screens/NovoAlunoScreen';
 import FaltasAlunoScreen from '../screens/FaltasAlunoScreen';
@@ -24,6 +24,8 @@ import BoletimScreen from '../screens/BoletimScreen';
 import MinhaGradeScreen from '../screens/MinhaGradeScreen';
 import MinhasDisciplinasScreen from '../screens/MinhasDisciplinasScreen';
 import LancarNotasScreen from '../screens/LancarNotasScreen';
+import ListaAvisosScreen from '../screens/ListaAvisosScreen';
+import CriarAvisoScreen from '../screens/CriarAvisoScreen'; // Adicionado
 
 const Stack = createNativeStackNavigator();
 
@@ -47,7 +49,7 @@ function AppStack() {
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Dashboard" component={DashboardScreen} />
       
-      {/* Admin */}
+      {/* Telas Admin */}
       <Stack.Screen name="CadastroAluno" component={CadastroAlunoScreen} />
       <Stack.Screen name="CadastroProfessor" component={CadastroProfessorScreen} />
       <Stack.Screen name="CadastroDisciplina" component={CadastroDisciplinaScreen} />
@@ -56,19 +58,21 @@ function AppStack() {
       <Stack.Screen name="NovoProfessor" component={NovoProfessorScreen} />
       <Stack.Screen name="NovoAluno" component={NovoAlunoScreen} />
       
-      {/* Edição */}
+      {/* Edição e Ações */}
       <Stack.Screen name="EditarAluno" component={EditarAlunoScreen} />
       <Stack.Screen name="EditarProfessor" component={EditarProfessorScreen} />
-      
-      {/* Ações */}
       <Stack.Screen name="FaltasAluno" component={FaltasAlunoScreen} />
       <Stack.Screen name="HorarioAluno" component={HorarioAlunoScreen} />
       
-      {/* Aluno */}
+      {/* Telas do Aluno */}
       <Stack.Screen name="Boletim" component={BoletimScreen} />
       <Stack.Screen name="MinhaGrade" component={MinhaGradeScreen} />
+      
+      {/* Avisos */}
+      <Stack.Screen name="ListaAvisos" component={ListaAvisosScreen} />
+      <Stack.Screen name="CriarAviso" component={CriarAvisoScreen} />
 
-      {/* Professor */}
+      {/* Telas do Professor */}
       <Stack.Screen name="MinhasDisciplinas" component={MinhasDisciplinasScreen} />
       <Stack.Screen name="LancarNotas" component={LancarNotasScreen} />
     </Stack.Navigator>

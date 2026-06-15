@@ -74,6 +74,13 @@ CREATE TABLE notas (
   created_at    TIMESTAMP DEFAULT NOW(),
   UNIQUE(aluno_id, disciplina_id)
 );
+CREATE TABLE avisos (
+  id SERIAL PRIMARY KEY,
+  titulo VARCHAR(255) NOT NULL,
+  conteudo TEXT NOT NULL,
+  data_publicacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  criado_por_id INTEGER REFERENCES usuarios(id)
+);
 
 -- ==========================================================
 -- 3. INSERÇÃO DE DADOS (Completa: Usuários, Profs, Disc, Alunos, Notas)

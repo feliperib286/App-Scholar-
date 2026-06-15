@@ -1,5 +1,5 @@
 -- ==========================================================
--- 1. LIMPEZA DO BANCO (Ordem correta para evitar erros)
+-- 1. LIMPEZA TOTAL
 -- ==========================================================
 DROP TABLE IF EXISTS notas CASCADE;
 DROP TABLE IF EXISTS professor_disciplina CASCADE;
@@ -9,21 +9,18 @@ DROP TABLE IF EXISTS alunos CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 
 -- ==========================================================
--- 2. CRIAÇÃO DAS TABELAS
+-- 2. CRIAÇÃO DAS TABELAS (Estrutura Consolidada)
 -- ==========================================================
-
--- Tabela de Usuários (Acesso ao Sistema)
 CREATE TABLE usuarios (
   id              SERIAL PRIMARY KEY,
   nome            VARCHAR(255),
   email           VARCHAR(100) NOT NULL UNIQUE,
   palavra_passe   VARCHAR(255) NOT NULL,
-  role            VARCHAR(20)  NOT NULL DEFAULT 'usuario', -- 'adm', 'usuario' ou 'professor'
+  role            VARCHAR(20)  NOT NULL DEFAULT 'usuario',
   primeiro_acesso BOOLEAN DEFAULT TRUE,
   created_at      TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela de Alunos
 CREATE TABLE alunos (
   id         SERIAL PRIMARY KEY,
   nome       VARCHAR(255) NOT NULL,
@@ -38,7 +35,6 @@ CREATE TABLE alunos (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela de Professores
 CREATE TABLE professores (
   id             SERIAL PRIMARY KEY,
   nome           VARCHAR(255) NOT NULL,
@@ -49,7 +45,6 @@ CREATE TABLE professores (
   created_at     TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela de Disciplinas
 CREATE TABLE disciplinas (
   id            SERIAL PRIMARY KEY,
   nome          VARCHAR(100) NOT NULL,
@@ -60,14 +55,12 @@ CREATE TABLE disciplinas (
   created_at    TIMESTAMP DEFAULT NOW()
 );
 
--- Tabela Auxiliar (Muitos para Muitos entre Professor e Disciplina)
 CREATE TABLE professor_disciplina (
   professor_id  INTEGER REFERENCES professores(id) ON DELETE CASCADE,
   disciplina_id INTEGER REFERENCES disciplinas(id) ON DELETE CASCADE,
   PRIMARY KEY (professor_id, disciplina_id)
 );
 
--- Tabela de Notas (Com colunas de faltas nativas)
 CREATE TABLE notas (
   id            SERIAL PRIMARY KEY,
   aluno_id      INTEGER NOT NULL REFERENCES alunos(id) ON DELETE CASCADE,
@@ -77,47 +70,54 @@ CREATE TABLE notas (
   media         DECIMAL(4,2),
   situacao      VARCHAR(20),
   faltas        INTEGER DEFAULT 0,
-  tipo_falta    VARCHAR(100) DEFAULT 'Comum',
+  tipo_falta    VARCHAR(50) DEFAULT 'Comum',
   created_at    TIMESTAMP DEFAULT NOW(),
   UNIQUE(aluno_id, disciplina_id)
 );
+CREATE TABLE avisos (
+  id SERIAL PRIMARY KEY,
+  titulo VARCHAR(255) NOT NULL,
+  conteudo TEXT NOT NULL,
+  data_publicacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  criado_por_id INTEGER REFERENCES usuarios(id)
+);
 
 -- ==========================================================
--- 3. INSERÇÃO DE DADOS PARA TESTE (Senha de todos: 123)
+-- 3. INSERÇÃO DE DADOS (Completa: Usuários, Profs, Disc, Alunos, Notas)
 -- ==========================================================
 
--- A) Usuários do Sistema
-INSERT INTO usuarios (nome, email, palavra_passe, role, primeiro_acesso) VALUES
-('Admin Fatec', 'admin@fatec.sp.gov.br', '$2a$10$w09ZbeBvL/mGq69s3V9fB.7.ZzO/FvEwG7vQshY5ZfG1I6Z9v12iG', 'adm', FALSE),
-('Maria Aparecida', 'maria.santos@fatec.sp.gov.br', '$2a$10$w09ZbeBvL/mGq69s3V9fB.7.ZzO/FvEwG7vQshY5ZfG1I6Z9v12iG', 'usuario', TRUE),
-('André Olímpio', 'andre.olimpio@fatec.sp.gov.br', '$2a$10$w09ZbeBvL/mGq69s3V9fB.7.ZzO/FvEwG7vQshY5ZfG1I6Z9v12iG', 'professor', FALSE);
+-- A) Usuários (Hash da senha 'password')
+INSERT INTO usuarios (nome, email, palavra_passe, role) VALUES
+('Admin Fatec', 'admin@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'adm'),
+('Maria Aparecida', 'maria.santos@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'usuario'),
+('Carlos Eduardo', 'carlos.lima@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'usuario'),
+('André Olímpio', 'andre.olimpio@fatec.sp.gov.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'professor');
 
 -- B) Professores
 INSERT INTO professores (nome, titulacao, area, tempo_docencia, email) VALUES
-('André Olímpio',  'Mestre (MSc)',  'Desenvolvimento Mobile', '8 a 12 anos',     'andre.olimpio@fatec.sp.gov.br'),
-('Fernanda Costa', 'Doutor (PhD)',  'Banco de Dados',         'Mais de 12 anos', 'fernanda.costa@fatec.sp.gov.br'),
-('Ricardo Mendes', 'Especialista', 'Engenharia de Software', '4 a 7 anos',      'ricardo.mendes@fatec.sp.gov.br');
+('André Olímpio', 'Mestre (MSc)', 'Desenvolvimento Mobile', '8 a 12 anos', 'andre.olimpio@fatec.sp.gov.br'),
+('Fernanda Costa', 'Doutor (PhD)', 'Banco de Dados', 'Mais de 12 anos', 'fernanda.costa@fatec.sp.gov.br'),
+('Ricardo Mendes', 'Especialista', 'Engenharia de Software', '4 a 7 anos', 'ricardo.mendes@fatec.sp.gov.br');
 
 -- C) Disciplinas
 INSERT INTO disciplinas (nome, carga_horaria, professor_id, curso, semestre) VALUES
 ('Programação para Dispositivos Móveis I', '80h', 1, 'DSM', '3º'),
-('Banco de Dados Relacional',              '80h', 2, 'DSM', '3º'),
-('Engenharia de Software',                 '60h', 3, 'DSM', '3º'),
-('Estrutura de Dados',                     '80h', 1, 'DSM', '3º');
+('Banco de Dados Relacional', '80h', 2, 'DSM', '3º'),
+('Engenharia de Software', '60h', 3, 'DSM', '3º'),
+('Estrutura de Dados', '80h', 1, 'DSM', '3º');
 
--- D) Vinculando o Professor André às suas disciplinas
+-- D) Vínculos Professores-Disciplinas
 INSERT INTO professor_disciplina (professor_id, disciplina_id) VALUES
-(1, 1),
-(1, 4);
+(1, 1), (2, 2), (3, 3), (1, 4);
 
 -- E) Alunos
-INSERT INTO alunos (nome, matricula, curso, email, telefone, cep, endereco, cidade, estado) VALUES
-('Maria Aparecida Santos', 'DSM2024042', 'DSM', 'maria.santos@fatec.sp.gov.br', '(12) 98765-4321', '12300-000', 'Rua das Flores, 123', 'Jacareí', 'SP'),
-('Carlos Eduardo Lima',    'DSM2024015', 'DSM', 'carlos.lima@fatec.sp.gov.br',  '(12) 97654-3210', '12301-100', 'Av. Brasil, 456', 'Jacareí', 'SP');
+INSERT INTO alunos (nome, matricula, curso, email, telefone, cidade) VALUES
+('Maria Aparecida Santos', 'DSM2024042', 'DSM', 'maria.santos@fatec.sp.gov.br', '(12) 98765-4321', 'Jacareí'),
+('Carlos Eduardo Lima', 'DSM2024015', 'DSM', 'carlos.lima@fatec.sp.gov.br', '(12) 97654-3210', 'Jacareí');
 
--- F) Notas da Maria
-INSERT INTO notas (aluno_id, disciplina_id, nota1, nota2, media, situacao) VALUES
-(1, 1, 8.5, 9.0,  8.75, 'Aprovado'),
-(1, 2, 7.0, 8.0,  7.5,  'Aprovado'),
-(1, 3, 5.0, 4.5,  4.75, 'Rec. Final'),
-(1, 4, 6.5, 7.5,  7.0,  'Aprovado');
+-- F) Notas (Maria)
+INSERT INTO notas (aluno_id, disciplina_id, nota1, nota2, media, situacao, faltas) VALUES
+(1, 1, 8.5, 9.0, 8.75, 'Aprovado', 0),
+(1, 2, 7.0, 8.0, 7.5, 'Aprovado', 2),
+(1, 3, 5.0, 4.5, 4.75, 'Rec. Final', 8),
+(1, 4, 6.5, 7.5, 7.0, 'Aprovado', 0);

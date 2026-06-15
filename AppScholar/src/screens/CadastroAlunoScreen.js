@@ -133,7 +133,7 @@ const excluirAluno = async (id) => {
       <View style={[styles.header, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backBtn}>← Voltar</Text>
+            <Text style={{ color: 'white' }}>← Voltar</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Gerenciar Alunos</Text>
         </View>

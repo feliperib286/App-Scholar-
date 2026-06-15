@@ -8,7 +8,7 @@ export default function HorarioAlunoScreen({ navigation }) {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backBtn}>← Voltar</Text>
+          <Text style={{ color: 'white' }}>← Voltar</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Horário de Aulas</Text>
       </View>
